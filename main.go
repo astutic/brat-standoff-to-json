@@ -12,11 +12,6 @@ import (
 	"unicode/utf8"
 )
 
-type AcharyaStruct struct {
-	Data     string
-	Entities map[int]AcharyaEntity
-}
-
 type AcharyaEntity struct {
 	begin int
 	end   int
@@ -256,11 +251,11 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 			tData = tData + scannerD.Text() + "\n"
 		}
 
-		a := AcharyaStruct{}
+		entityMap := make(map[int]AcharyaEntity)
 
-		a.Entities = generateEntityMap(ent, aData)
-		a.Data = string(tData)
-		acharya, _ := generateAcharyaAndConvert(a.Data, ent, a.Entities)
+		entityMap = generateEntityMap(ent, aData)
+
+		acharya, _ := generateAcharyaAndConvert(string(tData), ent, entityMap)
 
 		handleOutput(opfile, acharya, textMult[i], overwrite, i)
 
