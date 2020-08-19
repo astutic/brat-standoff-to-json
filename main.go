@@ -280,11 +280,11 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 
 func main() {
 	fmt.Println("Starting Acharya service ...")
-	all := flag.String("all", "", "Path to your folder")
-	anns := flag.String("ann", "", "Comma sepeartad locations of the annotation files (ann)")
-	texts := flag.String("text", "", "Comma sepeartad locations of the text files (txt)")
-	conf := flag.String("conf", "", "Location of the annotation configuration file (.conf)")
-	oFileName := flag.String("output", "", "Name for the output file")
+	all := flag.String("all", "", "Path to the folder containing the collection")
+	anns := flag.String("ann", "", "Comma sepeartad locations of the annotation files (.ann)")
+	texts := flag.String("text", "", "Comma sepeartad locations of the text files (.txt)")
+	conf := flag.String("conf", "", "Location of the annotation configuration file (annotation.conf)")
+	oFileName := flag.String("output", "", "Name of the output file to be generated")
 	overWrite := flag.Bool("overwrite", false, "If you wish to overwrite the generated file then set overwrite to true")
 
 	flag.Parse()
