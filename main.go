@@ -274,7 +274,6 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 }
 
 func main() {
-	fmt.Println("Starting Acharya service ...")
 	all := flag.String("all", "", "Path to the folder containing the collection")
 	anns := flag.String("ann", "", "Comma sepeartad locations of the annotation files (.ann) in correct order")
 	texts := flag.String("text", "", "Comma sepeartad locations of the text files (.txt) in correct order")
