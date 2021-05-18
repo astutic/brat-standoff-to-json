@@ -44,8 +44,8 @@ func TestGetEntities(t *testing.T) {
 	}
 
 	entities := [][]string{
-		[]string{"Person", "Organization", "GPE", "Money", "Inv1"},
-		[]string{"ORG", "PER", "LOC", "MISC", "Inv2"},
+		{"Person", "Organization", "GPE", "Money", "Inv1"},
+		{"ORG", "PER", "LOC", "MISC", "Inv2"},
 	}
 	invalid := []string{"Inv1", "Inv2"}
 
@@ -89,13 +89,13 @@ func TestGeneratePaths(t *testing.T) {
 
 func TestGenerateEntityMap(t *testing.T) {
 
-	expected := []AcharyaEntity{AcharyaEntity{418, 426, "Organization"},
-		AcharyaEntity{456, 468, "Money"},
-		AcharyaEntity{0, 0, ""},
-		AcharyaEntity{473, 496, "Person"},
-		AcharyaEntity{511, 535, "Person"},
-		AcharyaEntity{540, 545, "Organization"},
-		AcharyaEntity{549, 560, "GPE"},
+	expected := []AcharyaEntity{{418, 426, "Organization"},
+		{456, 468, "Money"},
+		{0, 0, ""},
+		{473, 496, "Person"},
+		{511, 535, "Person"},
+		{540, 545, "Organization"},
+		{549, 560, "GPE"},
 	}
 
 	cDat, cErr := os.Open("./testData/news/annotation.conf")
