@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -10,6 +11,22 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+)
+
+const (
+	logNoEntities                            = "The conf file does not have an `[entities]` field or `[entities]` field is empty"
+	logMultipleConfFilesFound                = "Multiple `annotation.conf` files found"
+	logFilesNotExist                         = "%s File does not exist"
+	logDiscontinuousTextBoundAnnNotSupported = "discontinuous text-bound annotations is not currently supported"
+	logSuccessfullyGeneratedTextfile         = "Successfully generated `%s` for %s\n"
+	logSuccessfullyUpdatedTextfile           = "Successfully generated `%s` for %s\n"
+	logNoAnnFilesNotEqualToTxt               = "The number of annotation files should be equal to the number of text files"
+)
+
+// Flag constants
+const (
+	logValNotSet              = "kindly set the value for -%s or --%s\n"
+	logOutputFileNotSpecified = "overwrite flag is provided but output file is not specified"
 )
 
 type AcharyaEntity struct {
@@ -50,7 +67,7 @@ func getEntities(confFile *os.File) map[string]bool {
 			startScan = true
 			continue
 		}
-		if startScan == true {
+		if startScan {
 			if len(strings.TrimSpace(scannerC.Text())) == 0 {
 				continue
 			}
@@ -63,34 +80,40 @@ func getEntities(confFile *os.File) map[string]bool {
 		}
 	}
 	if len(entities) == 0 {
-		log.Fatal("The conf file does not have an `[entities]` field or `[entities]` field is empty")
+		log.Fatal(logNoEntities)
 	}
 	return entities
 }
 
 func generatePaths(path string) ([]string, []string, error) {
+	const dotAnn = ".ann"
+	const dotTxt = ".txt"
+
 	confCount := 0
 	annMult := []string{}
 	textMult := []string{}
+
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if confCount > 1 {
-				log.Fatalf("Multiple `annotation.conf` files found")
+				log.Fatalf(logMultipleConfFilesFound)
 			}
-			if strings.HasSuffix(path, ".ann") {
-				if _, err := os.Stat(strings.TrimSuffix(path, ".ann") + ".txt"); os.IsNotExist(err) {
-					log.Fatalf("%s File does not exist", strings.TrimSuffix(path, ".ann")+".txt")
+
+			switch {
+			case strings.HasSuffix(path, dotAnn):
+				if _, err := os.Stat(strings.TrimSuffix(path, dotAnn) + dotTxt); os.IsNotExist(err) {
+					log.Fatalf(logFilesNotExist, strings.TrimSuffix(path, dotAnn)+dotTxt)
 				}
 				annMult = append(annMult, path)
-				textMult = append(textMult, strings.TrimSuffix(path, ".ann")+".txt")
-			} else if strings.HasSuffix(path, ".txt") {
-				if _, err := os.Stat(strings.TrimSuffix(path, ".txt") + ".ann"); os.IsNotExist(err) {
-					log.Fatalf("%s File does not exist", strings.TrimSuffix(path, ".txt")+".ann")
+				textMult = append(textMult, strings.TrimSuffix(path, dotAnn)+dotTxt)
+			case strings.HasSuffix(path, dotTxt):
+				if _, err := os.Stat(strings.TrimSuffix(path, dotTxt) + dotAnn); os.IsNotExist(err) {
+					log.Fatalf(logFilesNotExist, strings.TrimSuffix(path, dotTxt)+dotAnn)
 				}
-			} else if strings.HasSuffix(path, "annotation.conf") {
+			case strings.HasSuffix(path, "annotation.conf"):
 				confCount++
 			}
 			return nil
@@ -115,7 +138,7 @@ func generateEntityMap(ent map[string]bool, aData *os.File) map[int]AcharyaEntit
 		if strings.HasPrefix(scanner.Text(), "T") {
 			splitAnn := strings.Split(strings.Replace(scanner.Text(), "\t", ",", 2), ",")
 			if strings.Contains(splitAnn[1], ";") {
-				panic("discontinuous text-bound annotations is not currently supported")
+				log.Fatal(logDiscontinuousTextBoundAnnNotSupported)
 			}
 			entAndPos := strings.Split(splitAnn[1], " ")
 			if ent[strings.TrimSpace(entAndPos[0])] {
@@ -132,7 +155,13 @@ func generateEntityMap(ent map[string]bool, aData *os.File) map[int]AcharyaEntit
 
 func generateAcharyaAndConvert(tData string, ent map[string]bool, entMap map[int]AcharyaEntity) (string, string) {
 	conv := ""
-	acharya := fmt.Sprintf("{\"Data\":\"%s\",\"Entities\":[", tData)
+	// It is necessary to marshal string as to avoid problems by escape sequences
+	escapedStr, err := json.Marshal(tData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	acharya := fmt.Sprintf("{\"Data\":%s,\"Entities\":[", fmt.Sprintf("%s", escapedStr))
 	j := 0
 	c := 0
 	for {
@@ -162,13 +191,13 @@ func handleOutput(outputFile, acharya, textfileName string, overWrite bool, curr
 
 		// asking for the first time
 		if currentParseIndex == 0 && !overWrite {
-			if _, err := os.Stat(fmt.Sprintf("%s", outputFile)); !os.IsNotExist(err) {
+			if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
 				log.Fatalf("The output file already exists use `--overwrite flag to overwrite the file`")
 			}
 		}
 
 		if currentParseIndex == 0 && overWrite {
-			if _, err := os.Stat(fmt.Sprintf("%s", outputFile)); !os.IsNotExist(err) {
+			if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
 				e := os.Remove(outputFile)
 				if e != nil {
 					log.Fatal(e)
@@ -177,17 +206,17 @@ func handleOutput(outputFile, acharya, textfileName string, overWrite bool, curr
 
 		}
 
-		f, err := os.OpenFile(fmt.Sprintf("%s", outputFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		if _, err = f.WriteString(acharya); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		if currentParseIndex == 0 {
-			fmt.Printf("Successfully generated `%s` for %s\n", outputFile, strings.TrimSpace(textfileName))
+			log.Printf(logSuccessfullyGeneratedTextfile, outputFile, strings.TrimSpace(textfileName))
 		} else {
-			fmt.Printf("Successfully updated `%s` for %s\n", outputFile, strings.TrimSpace(textfileName))
+			log.Printf(logSuccessfullyUpdatedTextfile, outputFile, strings.TrimSpace(textfileName))
 		}
 	}
 }
@@ -226,7 +255,7 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 	}
 
 	if len(annMult) != len(textMult) {
-		log.Fatal("The number of annotation files should be equal to the number of text files")
+		log.Fatal(logNoAnnFilesNotEqualToTxt)
 	}
 
 	for i := range annMult {
@@ -251,9 +280,7 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 			tData = tData + scannerD.Text() + "\n"
 		}
 
-		entityMap := make(map[int]AcharyaEntity)
-
-		entityMap = generateEntityMap(ent, aData)
+		entityMap := generateEntityMap(ent, aData)
 
 		acharya, _ := generateAcharyaAndConvert(string(tData), ent, entityMap)
 
@@ -266,7 +293,7 @@ func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
 		// uncomment the  below lines to write an output.ann file
 		// err := ioutil.WriteFile("./output.ann", []byte(conv), 0644)
 		// if err != nil {
-		// 	panic(err)
+		// 	log.Fatal(err)
 		// }
 
 		// fmt.Println("Successfully `output.ann` in the current diretory")
@@ -287,14 +314,14 @@ func main() {
 		flag.VisitAll(func(f *flag.Flag) {
 			if f.Value.String() == "" {
 				if (f.Name != "output") && (f.Name != "all") {
-					log.Fatalf("kindly set the value for -%s or --%s\n", f.Name, f.Name)
+					log.Fatalf(logValNotSet, f.Name, f.Name)
 				}
 			}
 		})
 	}
 
 	if *overWrite && *oFileName == "" {
-		log.Fatalf("overwrite flag is provided but output file is not specified")
+		log.Fatalf(logOutputFileNotSpecified)
 	}
 
 	handleMain(*all, *conf, *oFileName, *anns, *texts, *overWrite)
