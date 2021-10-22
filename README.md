@@ -18,7 +18,9 @@ Download a release from [here](https://github.com/astutic/bratStandoffConverter/
 
 Then run the file using go OR use the executable
 
-#### Generates acharya format for files in a specific directory and logs it to the console
+## Examples
+
+### Generates acharya format for files in a specific directory and logs it to the console
 
 ```bash
 go run main.go --all "./path/to/the/collection"
@@ -28,7 +30,7 @@ OR
 bratconverter --all "./path/to/the/collection"
 ```
 
-example  
+##### example  
 ```bash
 go run main.go --all "./testData/news"
 ```
@@ -38,7 +40,7 @@ bratconverter  --all "./testData/news"
 ```
 
 
-#### Generate an output file
+### Generate an output file
 
 ```bash
 go run main.go --all "./path/to/the/collection" --output "path/output-file-name"
@@ -48,7 +50,7 @@ OR
 bratconverter  --all "./path/to/the/collection" --output "path/output-file-name"
 ```  
 
-example
+##### example
 > The command below will generate an output file named **acharyaFormat.jsonl** in the current directory
 
 ```bash
@@ -64,7 +66,7 @@ bratconverter  --all "./testData/news" --output "./acharyaFormat.jsonl"
 ! **NOTE** the order of the .ann files an .txt files should be the same  
 `go run main.go --ann "file1.ann,file2.ann" --text "file1.txt,file2.txt" --conf "file.conf"`
 
-example  
+##### example  
 ```bash
 go run main.go --ann "testData/news/000-introduction.ann,testData/news/040-text_span_annotation.ann" --text "testData/news/000-introduction.txt,testData/news/040-text_span_annotation.txt" --conf "testData/news/annotation.conf"
 ```
@@ -72,6 +74,8 @@ OR
 ```bash
 bratconverter  --ann "testData/news/000-introduction.ann,testData/news/040-text_span_annotation.ann" --text "testData/news/000-introduction.txt,testData/news/040-text_span_annotation.txt" --conf "testData/news/annotation.conf"
 ```
+
+## Commands
 
 |Command   | Type  |     Description| Default value  |   
 |---|---|---|---|
