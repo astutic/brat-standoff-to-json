@@ -22,7 +22,7 @@ const (
 
 	ERR_SUB_STR_NEGATIVE_START_POS           = "start position should be a positive number, Received start position %d"
 	ERR_SUB_STR_ENDPOS_SMALLER_THAN_START    = "end position should be greater than start position, Received end position %d"
-	ERR_SUB_STR_ENDPOS_GREATER_THAN_DATA_LEN = "end position should be greater than start length of the txt data, Length of txt data: %d, End position: %d"
+	ERR_SUB_STR_ENDPOS_GREATER_THAN_DATA_LEN = "end position should be lesser than length of the txt data, Length of txt data: %d, End position: %d"
 
 	ERR_FILES_NOT_EXIST = "%s file does not exist"
 
@@ -129,9 +129,6 @@ func GetSubDirectories(path string) ([]string, []string, error) {
 			if err != nil {
 				return err
 			}
-			if annConfCount > 1 {
-				return errors.New(ERR_MULTIPLE_CONF_FILES_FOUND)
-			}
 
 			switch {
 			// .ann file should have a corresponding .txt file
@@ -148,6 +145,10 @@ func GetSubDirectories(path string) ([]string, []string, error) {
 				}
 			case strings.HasSuffix(path, "annotation.conf"):
 				annConfCount++
+			}
+
+			if annConfCount > 1 {
+				return errors.New(ERR_MULTIPLE_CONF_FILES_FOUND)
 			}
 			return nil
 		})
@@ -215,7 +216,7 @@ func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAc
 	return numberEntityArr, nil
 }
 
-func GenerateAcharyaAndStandoff(tData string, entMap []NumberAcharyaEntity) (string, string, error) {
+func GenerateAcharyaAndStandoff(tData string, numberAcharyaEnt []NumberAcharyaEntity) (string, string, error) {
 	standoff := ""
 	// It is necessary to marshal string as to avoid problems by escape sequences
 	escapedStr, err := json.Marshal(tData)
@@ -225,7 +226,7 @@ func GenerateAcharyaAndStandoff(tData string, entMap []NumberAcharyaEntity) (str
 
 	acharya := fmt.Sprintf("{\"Data\":%s,\"Entities\":[", fmt.Sprintf("%s", escapedStr))
 
-	for _, v := range entMap {
+	for _, v := range numberAcharyaEnt {
 		str, err := GetSubString(tData, v.Entity.Begin, v.Entity.End)
 		if err != nil {
 			return "", "", err
@@ -247,20 +248,14 @@ func handleOutput(outputFile, acharya string, overWrite bool) error {
 		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
 			return errors.New(ERR_FLAG_FILE_ALREADY_EXISTS)
 		}
-	} else {
-		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
-			e := os.Remove(outputFile)
-			if e != nil {
-				return e
-			}
-		}
-
 	}
 
-	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
+
 	if _, err = f.WriteString(acharya); err != nil {
 		return err
 	}
@@ -268,12 +263,12 @@ func handleOutput(outputFile, acharya string, overWrite bool) error {
 	return nil
 }
 
-func handleMain(folderPath, conf, opFile, anns, texts string, overwrite bool) error {
+func handleMain(fPath, annFiles, txtFiles, conf, opFile string, overwrite bool) error {
 	annMult := []string{}
 	textMult := []string{}
 	var err error
-	if folderPath != "" {
-		annMult, textMult, err = GetSubDirectories(folderPath)
+	if fPath != "" {
+		annMult, textMult, err = GetSubDirectories(fPath)
 		if err != nil {
 			return err
 		}
@@ -281,9 +276,9 @@ func handleMain(folderPath, conf, opFile, anns, texts string, overwrite bool) er
 
 	var confPath string
 
-	if folderPath != "" {
+	if fPath != "" {
 		// If a folder path is provided then the annotation conf file should be present in the root of the folder
-		confPath = folderPath + "/annotation.conf"
+		confPath = fPath + "/annotation.conf"
 	} else {
 		confPath = conf
 	}
@@ -299,9 +294,9 @@ func handleMain(folderPath, conf, opFile, anns, texts string, overwrite bool) er
 		return errors.New(ERR_NO_ENTITIES)
 	}
 
-	if folderPath == "" {
-		annMult = strings.Split(anns, ",")
-		textMult = strings.Split(texts, ",")
+	if fPath == "" {
+		annMult = strings.Split(annFiles, ",")
+		textMult = strings.Split(txtFiles, ",")
 	}
 
 	generatedAcharya := ""
@@ -309,7 +304,7 @@ func handleMain(folderPath, conf, opFile, anns, texts string, overwrite bool) er
 	for i := range annMult {
 		annFile, aErr := os.Open(strings.TrimSpace(annMult[i]))
 		if aErr != nil {
-			return err
+			return aErr
 		}
 		defer annFile.Close()
 
@@ -324,12 +319,12 @@ func handleMain(folderPath, conf, opFile, anns, texts string, overwrite bool) er
 			return err
 		}
 
-		entityMap, err := GenNumberEntityArr(entities, annFile)
+		entityArr, err := GenNumberEntityArr(entities, annFile)
 		if err != nil {
 			return err
 		}
 
-		acharya, _, err := GenerateAcharyaAndStandoff(string(txtFileData), entityMap)
+		acharya, _, err := GenerateAcharyaAndStandoff(string(txtFileData), entityArr)
 		if err != nil {
 			return err
 		}
@@ -418,7 +413,7 @@ func main() {
 		exit1()
 	}
 
-	err = handleMain(*folderPath, *confFile, *oFileName, *annFiles, *txtFiles, *overWrite)
+	err = handleMain(*folderPath, *annFiles, *txtFiles, *confFile, *oFileName, *overWrite)
 	if err != nil {
 		fmt.Println(err)
 		exit1()
