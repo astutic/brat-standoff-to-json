@@ -85,3 +85,10 @@ bratconverter  --ann "testData/news/000-introduction.ann,testData/news/040-text_
  conf       | c          | string | Location of the annotation configuration file (annotation.conf)           |        
  output     | o          | string | Name of the output file to be generated                                   |     
  force      | f          | bool   | If you wish to overwrite the generated file then set force to true        | false         
+
+## Original data displayed in brat
+![Original data displayed in brat](./docs/images/brat ui.png)
+
+## Data from Brat converted to Acharya format
+![Brat data displayed in Acharya](./docs/images/brat to Acharya ui.png)
+
