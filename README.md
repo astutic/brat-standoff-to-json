@@ -1,5 +1,5 @@
 **[ Windows PowerShell ]** 
-If you want to use the Brat → JSONL converter and If Brat Standoff **contains non English characters** Then its advised to set the following in PowerShell first 👇👇
+If you want to use the Brat → JSONL converter and If Brat Standoff **contains non English characters** Then its advised to set the following in PowerShell first
 ```powershell
 $OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
 ```
@@ -23,42 +23,42 @@ Then run the file using go OR use the executable
 ### Generates acharya format for files in a specific directory and logs it to the console
 
 ```bash
-go run main.go --all "./path/to/the/collection"
+go run main.go -p "./path/to/the/collection"
 ```
 OR
 ```bash
-bratconverter --all "./path/to/the/collection"
+bratconverter -p "./path/to/the/collection"
 ```
 
 ##### example  
 ```bash
-go run main.go --all "./testData/news"
+go run main.go -p "./testData/news"
 ```
 OR
 ```bash
-bratconverter  --all "./testData/news"
+bratconverter  -p "./testData/news"
 ```
 
 
 ### Generate an output file
 
 ```bash
-go run main.go --all "./path/to/the/collection" --output "path/output-file-name"
+go run main.go -p "./path/to/the/collection" --output "path/output-file-name"
 ```  
 OR
 ```bash
-bratconverter  --all "./path/to/the/collection" --output "path/output-file-name"
+bratconverter  -p "./path/to/the/collection" --output "path/output-file-name"
 ```  
 
 ##### example
 > The command below will generate an output file named **acharyaFormat.jsonl** in the current directory
 
 ```bash
-go run main.go --all "./testData/news" --output "./acharyaFormat.jsonl"
+go run main.go -p "./testData/news" --output "./acharyaFormat.jsonl"
 ```
 OR
 ```bash
-bratconverter  --all "./testData/news" --output "./acharyaFormat.jsonl"
+bratconverter  -p "./testData/news" --output "./acharyaFormat.jsonl"
 ```
 
 ### Generating for specific files
@@ -77,11 +77,11 @@ bratconverter  --ann "testData/news/000-introduction.ann,testData/news/040-text_
 
 ## Commands
 
-|Command   | Type  |     Description| Default value  |   
-|---|---|---|---|
-|-overwrite   | bool  | If you wish to overwrite the generated file then set overwrite to true  |  false |
-|-all| string |Path to the folder containing the collection|   |
-|-ann| string| Comma sepeartad locations of the annotation files (.ann) in correct order|   |
-|-conf| string |Location of the annotation configuration file (annotation.conf)|   |
-|-output| string| Name of the output file to be generated|   |
-|-text| string| Comma sepeartad locations of the text files (.txt) in correct order|   |
+ Command    | Short hand | Type   | Description                                                               | Default value |   
+------------|------------|--------|---------------------------------------------------------------------------|-
+ folderPath | p          | string | Path to the folder containing the collection                              |               
+ ann        | a          | string | Comma sepeartad locations of the annotation files (.ann) in correct order |               
+ txt        | t          | string | Comma sepeartad locations of the text files (.txt) in correct order       |               
+ conf       | c          | string | Location of the annotation configuration file (annotation.conf)           |        
+ output     | o          | string | Name of the output file to be generated                                   |     
+ force      | f          | bool   | If you wish to overwrite the generated file then set force to true        | false         
