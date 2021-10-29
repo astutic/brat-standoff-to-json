@@ -82,13 +82,13 @@ bratconverter  -p "./testData/news" --output "./acharyaFormat.jsonl"
 ##### example
 
 ```bash
-go run main.go --ann "testData/news/000-introduction.ann,testData/news/040-text_span_annotation.ann" --text "testData/news/000-introduction.txt,testData/news/040-text_span_annotation.txt" --conf "testData/news/annotation.conf"
+go run main.go --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
 ```
 
 OR
 
 ```bash
-bratconverter  --ann "testData/news/000-introduction.ann,testData/news/040-text_span_annotation.ann" --text "testData/news/000-introduction.txt,testData/news/040-text_span_annotation.txt" --conf "testData/news/annotation.conf"
+bratconverter  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
 ```
 
 ## Commands
