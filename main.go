@@ -16,33 +16,33 @@ import (
 )
 
 const (
-	ERR_NO_ENTITIES                              = "the conf file does not have an `[entities]` field or `[entities]` field is empty"
-	ERR_MULTIPLE_CONF_FILES_FOUND                = "multiple `annotation.conf` files found"
-	ERR_DISCONTINUOS_TEXTBOUND_ANN_NOT_SUPPORTED = "discontinuous text-bound annotations is not currently supported"
+	ErrNoEntities                           = "the conf file does not have an `[entities]` field or `[entities]` field is empty"
+	ErrMultipleConfFilesFound               = "multiple `annotation.conf` files found"
+	ErrDiscontinuosTextboundAnnNotSupported = "discontinuous text-bound annotations is not currently supported"
 
-	ERR_SUB_STR_NEGATIVE_START_POS           = "start position should be a positive number, Received start position %d"
-	ERR_SUB_STR_ENDPOS_SMALLER_THAN_START    = "end position should be greater than start position, Received end position %d"
-	ERR_SUB_STR_ENDPOS_GREATER_THAN_DATA_LEN = "end position should be lesser than length of the txt data, Length of txt data: %d, End position: %d"
+	ErrSubStrNegativeStartPos         = "start position should be a positive number, Received start position %d"
+	ErrSubStrEndPosSmallerThanStart   = "end position should be greater than start position, Received end position %d"
+	ErrSubStrEndposGreaterThanDataLen = "end position should be lesser than length of the txt data, Length of txt data: %d, End position: %d"
 
-	ERR_FILES_NOT_EXIST = "%s file does not exist"
+	ErrFilesNotExist = "%s file does not exist"
 
-	ERR_TXT_ANN_BAD_FORMAT = "text annotation is badly formatted"
+	ErrTxtAnnBadFormat = "text annotation is badly formatted"
 
-	ERR_BAD_FORMAT     = "file follows unknown format: "
-	ERR_BAD_FORMAT_TAB = "file follows unknown format: expected 3 properties separared by [tab]"
+	ErrBadFormat    = "file follows unknown format: "
+	ErrBadFormatTab = "file follows unknown format: expected 3 properties separared by [tab]"
 
-	ERR_FLAG_FILE_ALREADY_EXISTS = "the output file already exists use `--force` or `-f` flag  to overwrite the file"
+	ErrFlagFileAlreadyExists = "the output file already exists use `--force` or `-f` flag  to overwrite the file"
 
-	INFO_SUCCESSFULLY_GEN_FILE = "successfully generated file: %s"
+	InfoSuccessfullyGenFile = "successfully generated file: %s"
 
-	ERR_VALIDATE_NO_ANN_FILES          = "no annotation files specified in the input"
-	ERR_VALIDATE_NO_TXT_FILES          = "no txt files specified in the input"
-	ERR_VALIDATE_NO_CONF_FILE          = "no conf file specified in the input"
-	ERR_VALIDATE_EMPTY_FOLDER          = "received empty folder path"
-	ERR_VALIDATE_OUTPUT_FILE_NOT_FOUND = "force flag is provided but output file is not specified"
+	ErrValidateNoAnnFiles         = "no annotation files specified in the input"
+	ErrValidateNoTxtFiles         = "no txt files specified in the input"
+	ErrValidateNoConfFile         = "no conf file specified in the input"
+	ErrValidateEmptyFolder        = "received empty folder path"
+	ErrValidateOutputFileNotFound = "force flag is provided but output file is not specified"
 
-	ERR_NO_ANN_NO_TXT_NOT_MATCH        = "the number of annotation files should be equal to the number of txt files,\n Received Annotation Files: %s Length: %d,Txt Files: %s Length: %d"
-	ERR_ANN_FILE_NOT_CORRESPOND_TO_TXT = "expected annotation file: %s to correspond to: %s.txt Received: %s"
+	ErrNoAnnNoTxtNotMatch        = "the number of annotation files should be equal to the number of txt files,\n Received Annotation Files: %s Length: %d,Txt Files: %s Length: %d"
+	ErrAnnFileNotCorrespondToTxt = "expected annotation file: %s to correspond to: %s.txt Received: %s"
 )
 
 func exit1() {
@@ -63,11 +63,11 @@ type NumberAcharyaEntity struct {
 func GetSubString(originalString string, startPos, endPos int) (string, error) {
 
 	if startPos < 0 {
-		return "", fmt.Errorf(ERR_SUB_STR_NEGATIVE_START_POS, startPos)
+		return "", fmt.Errorf(ErrSubStrNegativeStartPos, startPos)
 	} else if endPos < startPos {
-		return "", fmt.Errorf(ERR_SUB_STR_ENDPOS_SMALLER_THAN_START, endPos)
+		return "", fmt.Errorf(ErrSubStrEndPosSmallerThanStart, endPos)
 	} else if endPos > len(originalString) {
-		return "", fmt.Errorf(ERR_SUB_STR_ENDPOS_GREATER_THAN_DATA_LEN, len(originalString), endPos)
+		return "", fmt.Errorf(ErrSubStrEndposGreaterThanDataLen, len(originalString), endPos)
 	}
 
 	counter := 0
@@ -134,21 +134,21 @@ func GetSubDirectories(path string) ([]string, []string, error) {
 			// .ann file should have a corresponding .txt file
 			case strings.HasSuffix(path, dotAnnSuffix):
 				if _, err := os.Stat(strings.TrimSuffix(path, dotAnnSuffix) + dotTxtSuffix); os.IsNotExist(err) {
-					return fmt.Errorf(ERR_FILES_NOT_EXIST, strings.TrimSuffix(path, dotAnnSuffix)+dotTxtSuffix)
+					return fmt.Errorf(ErrFilesNotExist, strings.TrimSuffix(path, dotAnnSuffix)+dotTxtSuffix)
 				}
 				annMult = append(annMult, path)
 				textMult = append(textMult, strings.TrimSuffix(path, dotAnnSuffix)+dotTxtSuffix)
 			// .ann file should have a corresponding .txt file
 			case strings.HasSuffix(path, dotTxtSuffix):
 				if _, err := os.Stat(strings.TrimSuffix(path, dotTxtSuffix) + dotAnnSuffix); os.IsNotExist(err) {
-					return fmt.Errorf(ERR_FILES_NOT_EXIST, strings.TrimSuffix(path, dotTxtSuffix)+dotAnnSuffix)
+					return fmt.Errorf(ErrFilesNotExist, strings.TrimSuffix(path, dotTxtSuffix)+dotAnnSuffix)
 				}
 			case strings.HasSuffix(path, "annotation.conf"):
 				annConfCount++
 			}
 
 			if annConfCount > 1 {
-				return errors.New(ERR_MULTIPLE_CONF_FILES_FOUND)
+				return errors.New(ErrMultipleConfFilesFound)
 			}
 			return nil
 		})
@@ -166,7 +166,7 @@ func GetTextAnnNo(ann string) (int, error) {
 			return strconv.Atoi(noStr)
 		}
 	}
-	return 0, errors.New(ERR_TXT_ANN_BAD_FORMAT)
+	return 0, errors.New(ErrTxtAnnBadFormat)
 }
 
 func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAcharyaEntity, error) {
@@ -183,7 +183,7 @@ func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAc
 			splitAnn := strings.Split(scanner.Text(), "\t")
 			if len(splitAnn) == 3 {
 				if strings.Contains(splitAnn[1], ";") {
-					return []NumberAcharyaEntity{}, errors.New(ERR_DISCONTINUOS_TEXTBOUND_ANN_NOT_SUPPORTED)
+					return []NumberAcharyaEntity{}, errors.New(ErrDiscontinuosTextboundAnnNotSupported)
 				}
 				entAndPos := strings.Split(splitAnn[1], " ")
 				if (len(entAndPos)) == 3 {
@@ -205,10 +205,10 @@ func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAc
 						numberEntityArr = append(numberEntityArr, NumberAcharyaEntity{annotationNo, AcharyaEntity{b, e, entAndPos[0]}})
 					}
 				} else {
-					return numberEntityArr, errors.New(ERR_BAD_FORMAT)
+					return numberEntityArr, errors.New(ErrBadFormat)
 				}
 			} else {
-				return numberEntityArr, errors.New(ERR_BAD_FORMAT_TAB)
+				return numberEntityArr, errors.New(ErrBadFormatTab)
 			}
 		}
 	}
@@ -246,7 +246,7 @@ func GenerateAcharyaAndStandoff(tData string, numberAcharyaEnt []NumberAcharyaEn
 func handleOutput(outputFile, acharya string, overWrite bool) error {
 	if !overWrite {
 		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
-			return errors.New(ERR_FLAG_FILE_ALREADY_EXISTS)
+			return errors.New(ErrFlagFileAlreadyExists)
 		}
 	}
 
@@ -291,7 +291,7 @@ func handleMain(fPath, annFiles, txtFiles, conf, opFile string, overwrite bool) 
 
 	entities := GetEntitiesFromFile(confFile)
 	if len(entities) == 0 {
-		return errors.New(ERR_NO_ENTITIES)
+		return errors.New(ErrNoEntities)
 	}
 
 	if fPath == "" {
@@ -343,7 +343,7 @@ func handleMain(fPath, annFiles, txtFiles, conf, opFile string, overwrite bool) 
 		return err
 	}
 
-	fmt.Printf(INFO_SUCCESSFULLY_GEN_FILE, opFile)
+	fmt.Printf(InfoSuccessfullyGenFile, opFile)
 
 	return nil
 }
@@ -352,11 +352,11 @@ func ValidateFlags(fPath, annFiles, txtFiles, confFile, oFileName string, overWr
 	if len(fPath) == 0 {
 		switch {
 		case IsEmptyString(annFiles):
-			return errors.New(ERR_VALIDATE_NO_ANN_FILES)
+			return errors.New(ErrValidateNoAnnFiles)
 		case IsEmptyString(txtFiles):
-			return errors.New(ERR_VALIDATE_NO_TXT_FILES)
+			return errors.New(ErrValidateNoTxtFiles)
 		case IsEmptyString(confFile):
-			return errors.New(ERR_VALIDATE_NO_CONF_FILE)
+			return errors.New(ErrValidateNoConfFile)
 		}
 
 		err := ValidateAnnAndTxt(annFiles, txtFiles)
@@ -364,11 +364,11 @@ func ValidateFlags(fPath, annFiles, txtFiles, confFile, oFileName string, overWr
 			return err
 		}
 	} else if IsEmptyString(fPath) {
-		return errors.New(ERR_VALIDATE_EMPTY_FOLDER)
+		return errors.New(ErrValidateEmptyFolder)
 	}
 
 	if overWrite && oFileName == "" {
-		return errors.New(ERR_VALIDATE_OUTPUT_FILE_NOT_FOUND)
+		return errors.New(ErrValidateOutputFileNotFound)
 	}
 
 	return nil
@@ -379,14 +379,14 @@ func ValidateAnnAndTxt(ann, txt string) error {
 	txtArray := strings.Split(txt, ",")
 
 	if len(annArray) != len(txtArray) {
-		return fmt.Errorf(ERR_NO_ANN_NO_TXT_NOT_MATCH, annArray, len(annArray), txtArray, len(txtArray))
+		return fmt.Errorf(ErrNoAnnNoTxtNotMatch, annArray, len(annArray), txtArray, len(txtArray))
 	}
 
 	for i, annPath := range annArray {
 		annBaseName := strings.TrimSpace(filepath.Base(annPath))
 		txtBaseName := strings.TrimSpace(filepath.Base(txtArray[i]))
 		if strings.TrimSuffix(annBaseName, filepath.Ext(annBaseName))+".txt" != txtBaseName {
-			return fmt.Errorf(ERR_ANN_FILE_NOT_CORRESPOND_TO_TXT, annPath, strings.TrimSuffix(annBaseName, filepath.Ext(annBaseName)), txtArray[i])
+			return fmt.Errorf(ErrAnnFileNotCorrespondToTxt, annPath, strings.TrimSuffix(annBaseName, filepath.Ext(annBaseName)), txtArray[i])
 		}
 	}
 
