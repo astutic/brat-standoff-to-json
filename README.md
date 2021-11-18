@@ -1,14 +1,6 @@
-**[ Windows PowerShell ]**
-If you want to use the Brat → JSONL converter and If Brat Standoff **contains non English characters** Then its advised to set the following in PowerShell first
+# Welcome to Brat-standoff to JSON converter
 
-```powershell
-$OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
-```
-
-#### Features that are currently unsupported:
-
-- [Discontinuous text-bound annotations](https://brat.nlplab.org/standoff.html "https://brat.nlplab.org/standoff.html")
-- [Advanced entity configuration](https://brat.nlplab.org/configuration.html#tool-configuration "https://brat.nlplab.org/configuration.html#tool-configuration")
+Brat-standoff to JSON converter is a cli tool that converts the given brat standoff to JSON format
 
 ## Using brat Standoff Converter
 
@@ -109,3 +101,17 @@ bratconverter  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/firs
 ## Data from Brat converted to Acharya format
 
 ![Brat data displayed in Acharya](./docs/images/brat_to_Acharya_ui.png "Acharya UI")
+
+## Note
+
+**[ Windows PowerShell ]**
+If you want to use the Brat → JSONL converter and If Brat Standoff **contains non English characters** Then its advised to set the following in PowerShell first
+
+```powershell
+$OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+```
+
+#### Features that are currently unsupported:
+
+- [Discontinuous text-bound annotations](https://brat.nlplab.org/standoff.html "https://brat.nlplab.org/standoff.html")
+- [Advanced entity configuration](https://brat.nlplab.org/configuration.html#tool-configuration "https://brat.nlplab.org/configuration.html#tool-configuration")
