@@ -158,7 +158,7 @@ func GetSubDirectories(path string) ([]string, []string, error) {
 	return annMult, textMult, nil
 }
 
-func GetTextAnnNo(ann string) (int, error) {
+func GetTextAnnNum(ann string) (int, error) {
 	if len(ann) > 0 {
 		annSplit := strings.Split(ann, "\t")
 		if len(annSplit[0]) > 1 {
@@ -197,7 +197,7 @@ func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAc
 							return []NumberAcharyaEntity{}, err
 						}
 
-						annotationNo, err := GetTextAnnNo(scanner.Text())
+						annotationNo, err := GetTextAnnNum(scanner.Text())
 						if err != nil {
 							return []NumberAcharyaEntity{}, err
 						}

@@ -214,7 +214,7 @@ func (suite *GetTextAnnNoSuite) SetupTest() {
 func (suite *GetTextAnnNoSuite) TestGetTextAnnNo() {
 
 	for _, v := range suite.TestData {
-		number, err := GetTextAnnNo(v.Input)
+		number, err := GetTextAnnNum(v.Input)
 		suite.Nil(err)
 		suite.Equal(v.Expected, number)
 	}
@@ -224,7 +224,7 @@ func (suite *GetTextAnnNoSuite) TestGetTextAnnNo() {
 func (suite *GetTextAnnNoSuite) TestGetTextAnnNoInvalid() {
 
 	for _, v := range suite.TestDataInvalid {
-		number, err := GetTextAnnNo(v.Input)
+		number, err := GetTextAnnNum(v.Input)
 		suite.NotNil(err, fmt.Sprintf("Error %v", v))
 		suite.Equal(v.Expected, number, fmt.Sprintf("Error %v", v))
 	}
