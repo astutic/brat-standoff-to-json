@@ -3,39 +3,73 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
+	"errors"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	flag "github.com/spf13/pflag"
 )
 
 const (
-	logNoEntities                            = "The conf file does not have an `[entities]` field or `[entities]` field is empty"
-	logMultipleConfFilesFound                = "Multiple `annotation.conf` files found"
-	logFilesNotExist                         = "%s File does not exist"
-	logDiscontinuousTextBoundAnnNotSupported = "discontinuous text-bound annotations is not currently supported"
-	logSuccessfullyGeneratedTextfile         = "Successfully generated `%s` for %s\n"
-	logSuccessfullyUpdatedTextfile           = "Successfully generated `%s` for %s\n"
-	logNoAnnFilesNotEqualToTxt               = "The number of annotation files should be equal to the number of text files"
+	ErrNoEntities                           = "the conf file does not have an `[entities]` field or `[entities]` field is empty"
+	ErrMultipleConfFilesFound               = "multiple `annotation.conf` files found"
+	ErrDiscontinuosTextboundAnnNotSupported = "discontinuous text-bound annotations is not currently supported"
+
+	ErrSubStrNegativeStartPos         = "start position should be a positive number, Received start position %d"
+	ErrSubStrEndPosSmallerThanStart   = "end position should be greater than start position, Received end position %d"
+	ErrSubStrEndposGreaterThanDataLen = "end position should be lesser than length of the txt data, Length of txt data: %d, End position: %d"
+
+	ErrFilesNotExist = "%s file does not exist"
+
+	ErrTxtAnnBadFormat = "text annotation is badly formatted"
+
+	ErrBadFormat    = "file follows unknown format: "
+	ErrBadFormatTab = "file follows unknown format: expected 3 properties separared by [tab]"
+
+	ErrFlagFileAlreadyExists = "the output file already exists use `--force` or `-f` flag  to overwrite the file"
+
+	InfoSuccessfullyGenFile = "successfully generated file: %s"
+
+	ErrValidateNoAnnFiles         = "no annotation files specified in the input"
+	ErrValidateNoTxtFiles         = "no txt files specified in the input"
+	ErrValidateNoConfFile         = "no conf file specified in the input"
+	ErrValidateEmptyFolder        = "received empty folder path"
+	ErrValidateOutputFileNotFound = "force flag is provided but output file is not specified"
+
+	ErrNoAnnNoTxtNotMatch        = "the number of annotation files should be equal to the number of txt files,\n Received Annotation Files: %s Length: %d,Txt Files: %s Length: %d"
+	ErrAnnFileNotCorrespondToTxt = "expected annotation file: %s to correspond to: %s.txt Received: %s"
 )
 
-// Flag constants
-const (
-	logValNotSet              = "kindly set the value for -%s or --%s\n"
-	logOutputFileNotSpecified = "overwrite flag is provided but output file is not specified"
-)
-
-type AcharyaEntity struct {
-	begin int
-	end   int
-	name  string
+func exit1() {
+	os.Exit(1)
 }
 
-func getSubString(originalString string, startPos, endPos int) string {
+type AcharyaEntity struct {
+	Begin int
+	End   int
+	Name  string
+}
+
+type NumberAcharyaEntity struct {
+	TxtAnnNo int
+	Entity   AcharyaEntity
+}
+
+func GetSubString(originalString string, startPos, endPos int) (string, error) {
+
+	if startPos < 0 {
+		return "", fmt.Errorf(ErrSubStrNegativeStartPos, startPos)
+	} else if endPos < startPos {
+		return "", fmt.Errorf(ErrSubStrEndPosSmallerThanStart, endPos)
+	} else if endPos > len(originalString) {
+		return "", fmt.Errorf(ErrSubStrEndposGreaterThanDataLen, len(originalString), endPos)
+	}
+
 	counter := 0
 	val := ""
 	var r rune
@@ -52,44 +86,41 @@ func getSubString(originalString string, startPos, endPos int) string {
 		}
 		counter++
 	}
-	return val
+	return val, nil
 }
 
-func getEntities(confFile *os.File) map[string]bool {
+func GetEntitiesFromFile(confFile *os.File) map[string]bool {
 
-	scannerC := bufio.NewScanner(confFile)
-	scannerC.Split(bufio.ScanLines)
+	scanner := bufio.NewScanner(confFile)
+	scanner.Split(bufio.ScanLines)
 	startScan := false
 	entities := make(map[string]bool)
 
-	for scannerC.Scan() {
-		if strings.Contains(scannerC.Text(), "[entities]") {
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "[entities]") {
 			startScan = true
 			continue
 		}
 		if startScan {
-			if len(strings.TrimSpace(scannerC.Text())) == 0 {
+			if len(strings.TrimSpace(scanner.Text())) == 0 {
 				continue
 			}
-			if strings.HasPrefix(scannerC.Text(), "[") {
+			if strings.HasPrefix(scanner.Text(), "[") {
 				break
-			} else if strings.HasPrefix(scannerC.Text(), "#") {
+			} else if strings.HasPrefix(scanner.Text(), "#") {
 				continue
 			}
-			entities[strings.TrimSpace(scannerC.Text())] = true
+			entities[strings.TrimSpace(scanner.Text())] = true
 		}
-	}
-	if len(entities) == 0 {
-		log.Fatal(logNoEntities)
 	}
 	return entities
 }
 
-func generatePaths(path string) ([]string, []string, error) {
-	const dotAnn = ".ann"
-	const dotTxt = ".txt"
+func GetSubDirectories(path string) ([]string, []string, error) {
+	const dotAnnSuffix = ".ann"
+	const dotTxtSuffix = ".txt"
 
-	confCount := 0
+	annConfCount := 0
 	annMult := []string{}
 	textMult := []string{}
 
@@ -98,23 +129,26 @@ func generatePaths(path string) ([]string, []string, error) {
 			if err != nil {
 				return err
 			}
-			if confCount > 1 {
-				log.Fatalf(logMultipleConfFilesFound)
-			}
 
 			switch {
-			case strings.HasSuffix(path, dotAnn):
-				if _, err := os.Stat(strings.TrimSuffix(path, dotAnn) + dotTxt); os.IsNotExist(err) {
-					log.Fatalf(logFilesNotExist, strings.TrimSuffix(path, dotAnn)+dotTxt)
+			// .ann file should have a corresponding .txt file
+			case strings.HasSuffix(path, dotAnnSuffix):
+				if _, err := os.Stat(strings.TrimSuffix(path, dotAnnSuffix) + dotTxtSuffix); os.IsNotExist(err) {
+					return fmt.Errorf(ErrFilesNotExist, strings.TrimSuffix(path, dotAnnSuffix)+dotTxtSuffix)
 				}
 				annMult = append(annMult, path)
-				textMult = append(textMult, strings.TrimSuffix(path, dotAnn)+dotTxt)
-			case strings.HasSuffix(path, dotTxt):
-				if _, err := os.Stat(strings.TrimSuffix(path, dotTxt) + dotAnn); os.IsNotExist(err) {
-					log.Fatalf(logFilesNotExist, strings.TrimSuffix(path, dotTxt)+dotAnn)
+				textMult = append(textMult, strings.TrimSuffix(path, dotAnnSuffix)+dotTxtSuffix)
+			// .ann file should have a corresponding .txt file
+			case strings.HasSuffix(path, dotTxtSuffix):
+				if _, err := os.Stat(strings.TrimSuffix(path, dotTxtSuffix) + dotAnnSuffix); os.IsNotExist(err) {
+					return fmt.Errorf(ErrFilesNotExist, strings.TrimSuffix(path, dotTxtSuffix)+dotAnnSuffix)
 				}
 			case strings.HasSuffix(path, "annotation.conf"):
-				confCount++
+				annConfCount++
+			}
+
+			if annConfCount > 1 {
+				return errors.New(ErrMultipleConfFilesFound)
 			}
 			return nil
 		})
@@ -124,206 +158,264 @@ func generatePaths(path string) ([]string, []string, error) {
 	return annMult, textMult, nil
 }
 
-func generateEntityMap(ent map[string]bool, aData *os.File) map[int]AcharyaEntity {
+func GetTextAnnNum(ann string) (int, error) {
+	if len(ann) > 0 {
+		annSplit := strings.Split(ann, "\t")
+		if len(annSplit[0]) > 1 {
+			noStr := annSplit[0][1:]
+			return strconv.Atoi(noStr)
+		}
+	}
+	return 0, errors.New(ErrTxtAnnBadFormat)
+}
+
+func GenNumberEntityArr(entFromConf map[string]bool, aData *os.File) ([]NumberAcharyaEntity, error) {
 	scanner := bufio.NewScanner(aData)
 	scanner.Split(bufio.ScanLines)
 
-	entityMap := make(map[int]AcharyaEntity)
-	count := 0
+	numberEntityArr := []NumberAcharyaEntity{}
 
 	for scanner.Scan() {
 		// Uncomment the lines below to dispaly the ann file
 		// fmt.Println(strings.Repeat("#", 30), "Annotations", strings.Repeat("#", 30))
 		// fmt.Println(scanner.Text())
 		if strings.HasPrefix(scanner.Text(), "T") {
-			splitAnn := strings.Split(strings.Replace(scanner.Text(), "\t", ",", 2), ",")
-			if strings.Contains(splitAnn[1], ";") {
-				log.Fatal(logDiscontinuousTextBoundAnnNotSupported)
+			splitAnn := strings.Split(scanner.Text(), "\t")
+			if len(splitAnn) == 3 {
+				if strings.Contains(splitAnn[1], ";") {
+					return []NumberAcharyaEntity{}, errors.New(ErrDiscontinuosTextboundAnnNotSupported)
+				}
+				entAndPos := strings.Split(splitAnn[1], " ")
+				if (len(entAndPos)) == 3 {
+					if entFromConf[strings.TrimSpace(entAndPos[0])] {
+						b, err := strconv.Atoi(entAndPos[1])
+						if err != nil {
+							return []NumberAcharyaEntity{}, err
+						}
+						e, err := strconv.Atoi(entAndPos[2])
+						if err != nil {
+							return []NumberAcharyaEntity{}, err
+						}
+
+						annotationNo, err := GetTextAnnNum(scanner.Text())
+						if err != nil {
+							return []NumberAcharyaEntity{}, err
+						}
+
+						numberEntityArr = append(numberEntityArr, NumberAcharyaEntity{annotationNo, AcharyaEntity{b, e, entAndPos[0]}})
+					}
+				} else {
+					return numberEntityArr, errors.New(ErrBadFormat)
+				}
+			} else {
+				return numberEntityArr, errors.New(ErrBadFormatTab)
 			}
-			entAndPos := strings.Split(splitAnn[1], " ")
-			if ent[strings.TrimSpace(entAndPos[0])] {
-				b, _ := strconv.Atoi(entAndPos[1])
-				e, _ := strconv.Atoi(entAndPos[2])
-				entityMap[count] = AcharyaEntity{b, e, entAndPos[0]}
-			}
-			count++
 		}
 	}
 
-	return entityMap
+	return numberEntityArr, nil
 }
 
-func generateAcharyaAndConvert(tData string, ent map[string]bool, entMap map[int]AcharyaEntity) (string, string) {
-	conv := ""
+func GenerateAcharyaAndStandoff(tData string, numberAcharyaEnt []NumberAcharyaEntity) (string, string, error) {
+	standoff := ""
 	// It is necessary to marshal string as to avoid problems by escape sequences
 	escapedStr, err := json.Marshal(tData)
 	if err != nil {
-		log.Fatal(err)
+		return "", "", err
 	}
 
 	acharya := fmt.Sprintf("{\"Data\":%s,\"Entities\":[", fmt.Sprintf("%s", escapedStr))
-	j := 0
-	c := 0
-	for {
-		ent, ok := entMap[j]
-		if ok {
-			conv = conv + fmt.Sprintf("T%d\t%s %d %d\t%s\n", j+1, ent.name, ent.begin, ent.end, getSubString(tData, ent.begin, ent.end))
-			acharya = acharya + fmt.Sprintf("[%d,%d,\"%s\"],", ent.begin, ent.end, ent.name)
-			c++
-		}
-		// loop until all entities in a are fetched
-		if c >= len(entMap) {
-			conv = strings.TrimSuffix(conv, "\n")
-			acharya = strings.TrimSuffix(acharya, ",")
-			acharya = strings.ReplaceAll(acharya, "\n", "\\n")
-			acharya = acharya + "]}\n"
-			break
-		}
-		j++
-	}
-	return acharya, conv
-}
 
-func handleOutput(outputFile, acharya, textfileName string, overWrite bool, currentParseIndex int) {
-	if outputFile == "" {
-		fmt.Println(acharya)
-	} else {
-
-		// asking for the first time
-		if currentParseIndex == 0 && !overWrite {
-			if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
-				log.Fatalf("The output file already exists use `--overwrite flag to overwrite the file`")
-			}
-		}
-
-		if currentParseIndex == 0 && overWrite {
-			if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
-				e := os.Remove(outputFile)
-				if e != nil {
-					log.Fatal(e)
-				}
-			}
-
-		}
-
-		f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	for _, v := range numberAcharyaEnt {
+		str, err := GetSubString(tData, v.Entity.Begin, v.Entity.End)
 		if err != nil {
-			log.Fatal(err)
+			return "", "", err
 		}
-		if _, err = f.WriteString(acharya); err != nil {
-			log.Fatal(err)
-		}
-		if currentParseIndex == 0 {
-			log.Printf(logSuccessfullyGeneratedTextfile, outputFile, strings.TrimSpace(textfileName))
-		} else {
-			log.Printf(logSuccessfullyUpdatedTextfile, outputFile, strings.TrimSpace(textfileName))
-		}
+		standoff = standoff + fmt.Sprintf("T%d\t%s %d %d\t%s\n", v.TxtAnnNo, v.Entity.Name, v.Entity.Begin, v.Entity.End, str)
+		acharya = acharya + fmt.Sprintf("[%d,%d,\"%s\"],", v.Entity.Begin, v.Entity.End, v.Entity.Name)
 	}
+
+	standoff = strings.TrimSuffix(standoff, "\n")
+	acharya = strings.TrimSuffix(acharya, ",")
+	acharya = strings.ReplaceAll(acharya, "\n", "\\n")
+	acharya = acharya + "]}\n"
+
+	return acharya, standoff, nil
 }
 
-func handleMain(all, conf, opfile, anns, texts string, overwrite bool) {
+func handleOutput(outputFile, acharya string, overWrite bool) error {
+	if !overWrite {
+		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
+			return errors.New(ErrFlagFileAlreadyExists)
+		}
+	}
+
+	f, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err = f.WriteString(acharya); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func handleMain(fPath, annFiles, txtFiles, conf, opFile string, overwrite bool) error {
 	annMult := []string{}
 	textMult := []string{}
 	var err error
-	if all != "" {
-		annMult, textMult, err = generatePaths(all)
-
+	if fPath != "" {
+		annMult, textMult, err = GetSubDirectories(fPath)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	var confPath string
 
-	if all != "" {
-		confPath = all + "/annotation.conf"
+	if fPath != "" {
+		// If a folder path is provided then the annotation conf file should be present in the root of the folder
+		confPath = fPath + "/annotation.conf"
 	} else {
 		confPath = conf
 	}
 
-	cDat, cErr := os.Open(confPath)
+	confFile, cErr := os.Open(confPath)
 	if cErr != nil {
-		log.Fatal(cErr)
+		return cErr
 	}
-	defer cDat.Close()
+	defer confFile.Close()
 
-	ent := getEntities(cDat)
-
-	if all == "" {
-		annMult = strings.Split(anns, ",")
-		textMult = strings.Split(texts, ",")
+	entities := GetEntitiesFromFile(confFile)
+	if len(entities) == 0 {
+		return errors.New(ErrNoEntities)
 	}
 
-	if len(annMult) != len(textMult) {
-		log.Fatal(logNoAnnFilesNotEqualToTxt)
+	if fPath == "" {
+		annMult = strings.Split(annFiles, ",")
+		textMult = strings.Split(txtFiles, ",")
 	}
+
+	generatedAcharya := ""
 
 	for i := range annMult {
-		aData, aErr := os.Open(strings.TrimSpace(annMult[i]))
+		annFile, aErr := os.Open(strings.TrimSpace(annMult[i]))
 		if aErr != nil {
-			log.Fatal(aErr)
+			return aErr
 		}
-		defer aData.Close()
+		defer annFile.Close()
 
-		tDat, tErr := os.Open(strings.TrimSpace(textMult[i]))
+		txtFile, tErr := os.Open(strings.TrimSpace(textMult[i]))
 		if tErr != nil {
-			log.Fatal(tErr)
+			return tErr
 		}
-		defer tDat.Close()
+		defer txtFile.Close()
 
-		tData := ""
-		scannerD := bufio.NewScanner(tDat)
-		scannerD.Split(bufio.ScanLines)
-
-		for scannerD.Scan() {
-			// add `\n` since they are removed by `scannerD.Split(bufio.ScanLines)`
-			tData = tData + scannerD.Text() + "\n"
+		txtFileData, err := ioutil.ReadAll(txtFile)
+		if err != nil {
+			return err
 		}
 
-		entityMap := generateEntityMap(ent, aData)
+		entityArr, err := GenNumberEntityArr(entities, annFile)
+		if err != nil {
+			return err
+		}
 
-		acharya, _ := generateAcharyaAndConvert(string(tData), ent, entityMap)
+		acharya, _, err := GenerateAcharyaAndStandoff(string(txtFileData), entityArr)
+		if err != nil {
+			return err
+		}
 
-		handleOutput(opfile, acharya, textMult[i], overwrite, i)
+		generatedAcharya = generatedAcharya + acharya
 
-		// Uncomment the below lines to show the converted files
-		// fmt.Println(strings.Repeat("#", 30), "Convert", strings.Repeat("#", 30))
-		// fmt.Println(conv)
-
-		// uncomment the  below lines to write an output.ann file
-		// err := ioutil.WriteFile("./output.ann", []byte(conv), 0644)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-
-		// fmt.Println("Successfully `output.ann` in the current diretory")
 	}
+
+	if opFile == "" {
+		fmt.Println(generatedAcharya)
+		return nil
+	}
+
+	err = handleOutput(opFile, generatedAcharya, overwrite)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(InfoSuccessfullyGenFile, opFile)
+
+	return nil
+}
+
+func ValidateFlags(fPath, annFiles, txtFiles, confFile, oFileName string, overWrite bool) error {
+	if len(fPath) == 0 {
+		switch {
+		case IsEmptyString(annFiles):
+			return errors.New(ErrValidateNoAnnFiles)
+		case IsEmptyString(txtFiles):
+			return errors.New(ErrValidateNoTxtFiles)
+		case IsEmptyString(confFile):
+			return errors.New(ErrValidateNoConfFile)
+		}
+
+		err := ValidateAnnAndTxt(annFiles, txtFiles)
+		if err != nil {
+			return err
+		}
+	} else if IsEmptyString(fPath) {
+		return errors.New(ErrValidateEmptyFolder)
+	}
+
+	if overWrite && oFileName == "" {
+		return errors.New(ErrValidateOutputFileNotFound)
+	}
+
+	return nil
+}
+
+func ValidateAnnAndTxt(ann, txt string) error {
+	annArray := strings.Split(ann, ",")
+	txtArray := strings.Split(txt, ",")
+
+	if len(annArray) != len(txtArray) {
+		return fmt.Errorf(ErrNoAnnNoTxtNotMatch, annArray, len(annArray), txtArray, len(txtArray))
+	}
+
+	for i, annPath := range annArray {
+		annBaseName := strings.TrimSpace(filepath.Base(annPath))
+		txtBaseName := strings.TrimSpace(filepath.Base(txtArray[i]))
+		if strings.TrimSuffix(annBaseName, filepath.Ext(annBaseName))+".txt" != txtBaseName {
+			return fmt.Errorf(ErrAnnFileNotCorrespondToTxt, annPath, strings.TrimSuffix(annBaseName, filepath.Ext(annBaseName)), txtArray[i])
+		}
+	}
+
+	return nil
+}
+
+func IsEmptyString(s string) bool {
+	return strings.TrimSpace(s) == "" || len(s) <= 0
 }
 
 func main() {
-	all := flag.String("all", "", "Path to the folder containing the collection")
-	anns := flag.String("ann", "", "Comma sepeartad locations of the annotation files (.ann) in correct order")
-	texts := flag.String("text", "", "Comma sepeartad locations of the text files (.txt) in correct order")
-	conf := flag.String("conf", "", "Location of the annotation configuration file (annotation.conf)")
-	oFileName := flag.String("output", "", "Name of the output file to be generated")
-	overWrite := flag.Bool("overwrite", false, "If you wish to overwrite the generated file then set overwrite to true")
+	folderPath := flag.StringP("folderPath", "p", "", "Path to the folder containing the collection")
+	annFiles := flag.StringP("ann", "a", "", "Comma sepeartad locations of the annotation files (.ann) in correct order")
+	txtFiles := flag.StringP("txt", "t", "", "Comma sepeartad locations of the text files (.txt) in correct order")
+	confFile := flag.StringP("conf", "c", "", "Location of the annotation configuration file (annotation.conf)")
+	oFileName := flag.StringP("output", "o", "", "Name of the output file to be generated")
+	overWrite := flag.BoolP("force", "f", false, "If you wish to overwrite the generated file then set force to true")
 
 	flag.Parse()
 
-	if *all == "" {
-		flag.VisitAll(func(f *flag.Flag) {
-			if f.Value.String() == "" {
-				if (f.Name != "output") && (f.Name != "all") {
-					log.Fatalf(logValNotSet, f.Name, f.Name)
-				}
-			}
-		})
+	err := ValidateFlags(*folderPath, *annFiles, *txtFiles, *confFile, *oFileName, *overWrite)
+	if err != nil {
+		fmt.Println(err)
+		exit1()
 	}
 
-	if *overWrite && *oFileName == "" {
-		log.Fatalf(logOutputFileNotSpecified)
+	err = handleMain(*folderPath, *annFiles, *txtFiles, *confFile, *oFileName, *overWrite)
+	if err != nil {
+		fmt.Println(err)
+		exit1()
 	}
-
-	handleMain(*all, *conf, *oFileName, *anns, *texts, *overWrite)
-
 }
