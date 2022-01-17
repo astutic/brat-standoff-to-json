@@ -15,6 +15,12 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+var Version = "development"
+
+func printVersion() {
+	fmt.Printf("\n bratconverter version: %s\n", Version)
+}
+
 const (
 	ErrNoEntities                           = "the conf file does not have an `[entities]` field or `[entities]` field is empty"
 	ErrMultipleConfFilesFound               = "multiple `annotation.conf` files found"
@@ -404,8 +410,14 @@ func main() {
 	confFile := flag.StringP("conf", "c", "", "Location of the annotation configuration file (annotation.conf)")
 	oFileName := flag.StringP("output", "o", "", "Name of the output file to be generated")
 	overWrite := flag.BoolP("force", "f", false, "If you wish to overwrite the generated file then set force to true")
+	version := flag.BoolP("version", "v", false, "Print bratconverter version")
 
 	flag.Parse()
+
+	if *version {
+		printVersion()
+		exit1()
+	}
 
 	err := ValidateFlags(*folderPath, *annFiles, *txtFiles, *confFile, *oFileName, *overWrite)
 	if err != nil {
