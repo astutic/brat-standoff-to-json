@@ -26,7 +26,7 @@ productionbuildWindows:
 	$(eval BIN_OS:=$(GOOSWIN))
 	$(eval ARCH_OS=$(GOARCHx64))
 	$(eval OUTEXT=$(WINEXT))
-	$(eval OUTBIN=$(BINNAME).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
+	$(eval OUTBIN=$(BINNAME).$(VERSION).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
 	@echo "building binary for $(BIN_OS) and $(ARCH_OS)"
 	CGO_ENABLED=0 GOOS=$(BIN_OS) GOARCH=$(ARCH_OS) $(GO) build -v -tags "production" -ldflags="-s -w -X 'main.Version=$(VERSION)'" -o $(BINPATH)$(OUTBIN)
 
@@ -34,7 +34,7 @@ productionbuildMac:
 	$(eval BIN_OS=$(GOOSMAC))
 	$(eval ARCH_OS=$(GOARCHx64))
 	$(eval OUTEXT=$(MACEXT))
-	$(eval OUTBIN=$(BINNAME).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
+	$(eval OUTBIN=$(BINNAME).$(VERSION).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
 	@echo "building binary for $(BIN_OS) and $(ARCH_OS)"
 	CGO_ENABLED=0 GOOS=$(BIN_OS) GOARCH=$(ARCH_OS) $(GO) build -v -tags "production" -ldflags="-s -w -X 'main.Version=$(VERSION)'" -o $(BINPATH)$(OUTBIN)
 
@@ -42,7 +42,7 @@ productionbuildMacM1:
 	$(eval BIN_OS=$(GOOSMAC))
 	$(eval ARCH_OS=$(GOARCHM1))
 	$(eval OUTEXT=$(MACEXT))
-	$(eval OUTBIN=$(BINNAME).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
+	$(eval OUTBIN=$(BINNAME).$(VERSION).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
 	@echo "building binary for $(BIN_OS) and $(ARCH_OS)"
 	CGO_ENABLED=0 GOOS=$(BIN_OS) GOARCH=$(ARCH_OS) $(GO) build -v -tags "production" -ldflags="-s -w -X 'main.Version=$(VERSION)'" -o $(BINPATH)$(OUTBIN)
 
@@ -50,7 +50,7 @@ productionbuildLinux:
 	$(eval BIN_OS=$(GOOSLINUX))
 	$(eval ARCH_OS=$(GOARCHx64))
 	$(eval OUTEXT=$(LINEXT))
-	$(eval OUTBIN=$(BINNAME).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
+	$(eval OUTBIN=$(BINNAME).$(VERSION).$(BIN_OS).$(ARCH_OS)$(OUTEXT))
 	@echo "building binary for $(BIN_OS) and $(ARCH_OS)"
 	CGO_ENABLED=0 GOOS=$(BIN_OS) GOARCH=$(ARCH_OS) $(GO) build -v -tags "production" -ldflags="-s -w -X 'main.Version=$(VERSION)'" -o $(BINPATH)$(OUTBIN)
 
