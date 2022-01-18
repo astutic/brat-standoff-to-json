@@ -93,6 +93,7 @@ bratconverter  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/firs
 | conf       | c          | string | Location of the annotation configuration file (annotation.conf)           |
 | output     | o          | string | Name of the output file to be generated                                   |
 | force      | f          | bool   | If you wish to overwrite the generated file then set force to true        | false         |
+| version    | v          | bool   | Prints the version of bratconverter                                       | false         |
 
 ## Original data displayed in brat
 
