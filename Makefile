@@ -61,8 +61,3 @@ unittest: $(COVERAGE)
 $(COVERAGE): $(SRCFiles) 
 	echo "initiating test..."
 	$(GO) test -p 1 -tags "development" -coverprofile=$(COVERAGE) .$(SLASH)...
-
-clean: packClean
-	@-$(RM) $(COVERAGE)
-	@-$(RM) $(BINPATH)
-
