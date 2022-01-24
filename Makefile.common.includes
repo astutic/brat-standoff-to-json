@@ -1,0 +1,40 @@
+GO=go
+OUTEXT:=
+ARCH=unk
+WINEXT=.exe
+LINEXT:=
+MACEXT=.bin
+
+GOOSLINUX=linux
+GOOSWIN=windows
+GOOSMAC=darwin
+GOARCHx64=amd64
+GOARCHM1=arm64
+
+
+CP=cp
+RM=rm -r 
+SLASH=/
+WHICH=which
+EXPORT=export
+UNSET=go env -u
+
+ifeq ($(OS),Windows_NT)
+	OUTEXT=$(WINEXT)
+	ARCH=$(PROCESSOR_ARCHITECTURE)
+	CP=copy
+	RM=del /Q 
+	SLASH=\\
+	WHICH=where
+	EXPORT=go env -w 
+	UNSET=go env -u
+else 
+	KERNELNAME:=$(shell uname -s)
+	ifeq ($(KERNELNAME),Linux)
+		OUTEXT=$(LINEXT)
+	endif
+	ifeq ($(KERNELNAME),Darwin)
+		OUTEXT=$(MACEXT)
+	endif
+	ARCH=$(shell uname -p)
+endif
