@@ -16,7 +16,7 @@ Then run the file using go OR use the executable
 
 ## Examples
 
-### Generates acharya format for files in a specific directory and logs it to the console
+### Converts and Prints JSONL (in acharya format) for files in the specified directory
 
 ```bash
 go run main.go -p "./path/to/the/collection"
@@ -25,7 +25,7 @@ go run main.go -p "./path/to/the/collection"
 OR
 
 ```bash
-bratconverter -p "./path/to/the/collection"
+brat-standoff-to-json -p "./path/to/the/collection"
 ```
 
 ##### example
@@ -37,10 +37,10 @@ go run main.go -p "./testData/news"
 OR
 
 ```bash
-bratconverter  -p "./testData/news"
+brat-standoff-to-json  -p "./testData/news"
 ```
 
-### Generate an output file
+### Save to an output file
 
 ```bash
 go run main.go -p "./path/to/the/collection" --output "path/output-file-name"
@@ -49,7 +49,7 @@ go run main.go -p "./path/to/the/collection" --output "path/output-file-name"
 OR
 
 ```bash
-bratconverter  -p "./path/to/the/collection" --output "path/output-file-name"
+brat-standoff-to-json  -p "./path/to/the/collection" --output "path/output-file-name"
 ```
 
 ##### example
@@ -63,7 +63,7 @@ go run main.go -p "./testData/news" --output "./acharyaFormat.jsonl"
 OR
 
 ```bash
-bratconverter  -p "./testData/news" --output "./acharyaFormat.jsonl"
+brat-standoff-to-json  -p "./testData/news" --output "./acharyaFormat.jsonl"
 ```
 
 ### Generating for specific files
@@ -80,26 +80,26 @@ go run main.go --ann "path/to/first.ann,path/to/second.ann" --text "path/to/firs
 OR
 
 ```bash
-bratconverter  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
+brat-standoff-to-json  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
 ```
 
 ## Commands
 
 | Command    | Short hand | Type   | Description                                                               | Default value |
 | ---------- | ---------- | ------ | ------------------------------------------------------------------------- | ------------- |
-| folderPath | p          | string | Path to the folder containing the collection                              |
+| folderPath | p          | string | Path to the folder containing the brat standoff collection                |
 | ann        | a          | string | Comma sepeartad locations of the annotation files (.ann) in correct order |
 | txt        | t          | string | Comma sepeartad locations of the text files (.txt) in correct order       |
 | conf       | c          | string | Location of the annotation configuration file (annotation.conf)           |
 | output     | o          | string | Name of the output file to be generated                                   |
 | force      | f          | bool   | If you wish to overwrite the generated file then set force to true        | false         |
-| version    | v          | bool   | Prints the version of bratconverter                                       | false         |
+| version    | v          | bool   | Prints the version number                                                 | false         |
 
 ## Original data displayed in brat
 
 ![Original data displayed in brat](./docs/images/brat_ui.png "Brat UI")
 
-## Data from Brat converted to Acharya format
+## Data from Brat converted to and uploaded to [Acharya](https://acharya.astutic.com)
 
 ![Brat data displayed in Acharya](./docs/images/brat_to_Acharya_ui.png "Acharya UI")
 
