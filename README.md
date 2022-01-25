@@ -12,11 +12,9 @@ OR
 
 Download a release from [here](https://github.com/astutic/bratStandoffConverter/releases)
 
-Then run the file using go OR use the executable
-
 ## Examples
 
-### Converts and Prints JSONL (in acharya format) for files in the specified directory
+### Converts and Prints JSONL (in acharya format) for brat files in the specified directory
 
 ```bash
 go run main.go -p "./path/to/the/collection"
@@ -66,7 +64,7 @@ OR
 brat-standoff-to-json  -p "./testData/news" --output "./acharyaFormat.jsonl"
 ```
 
-### Generating for specific files
+### Converting specific files
 
 ! **NOTE** the order of the .ann files an .txt files should be the same  
 `go run main.go --ann "file1.ann,file2.ann" --text "file1.txt,file2.txt" --conf "file.conf"`
