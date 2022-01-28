@@ -5,12 +5,14 @@ Brat-standoff to JSON converter is a cli tool that converts the given brat stand
 ## Using brat Standoff Converter
 
 ```bash
- git clone https://github.com/astutic/bratStandoffConverter.git
+ git clone https://github.com/astutic/brat-standoff-to-json.git
 ```
 
 OR
 
-Download a release from [here](https://github.com/astutic/bratStandoffConverter/releases)
+Download a release from [here](https://github.com/astutic/brat-standoff-to-json/releases)
+
+and rename the file as brat-standoff-to-json
 
 ## Examples
 
