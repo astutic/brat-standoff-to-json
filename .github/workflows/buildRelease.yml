@@ -21,4 +21,5 @@ jobs:
       run: make test
       
     - name: Build
-      run: make productionbuild Version=${{ github.ref }}
+      run: make productionbuild Version=0.1.0
+      
