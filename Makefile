@@ -7,7 +7,8 @@ export VERSION=$(Version)
 BINPATH=bin$(SLASH)
 SRCFiles=$(wildcard *$(SLASH)*.go *.go)
 COVERAGE=cov.out
-BINNAME=bratconverter
+BINNAME=bratstandoff-to-json
+UTFILE=Ofilename
 
 setup: go_get
 
@@ -61,3 +62,9 @@ unittest: $(COVERAGE)
 $(COVERAGE): $(SRCFiles) 
 	echo "initiating test..."
 	$(GO) test -p 1 -tags "development" -coverprofile=$(COVERAGE) .$(SLASH)...
+
+clean:
+	@-$(RM) $(COVERAGE)
+	@-$(RM) $(UTFILE)
+	@-$(RM) $(BINPATH)
+
