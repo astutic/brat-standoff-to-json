@@ -69,18 +69,18 @@ brat-standoff-to-json  -p "./testData/news" --output "./acharyaFormat.jsonl"
 ### Converting specific files
 
 ! **NOTE** the order of the .ann files an .txt files should be the same  
-`go run main.go --ann "file1.ann,file2.ann" --text "file1.txt,file2.txt" --conf "file.conf"`
+`go run main.go --ann "file1.ann,file2.ann" --txt "file1.txt,file2.txt" --conf "file.conf"`
 
 ##### example
 
 ```bash
-go run main.go --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
+go run main.go --ann "path/to/first.ann,path/to/second.ann" --txt "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
 ```
 
 OR
 
 ```bash
-brat-standoff-to-json  --ann "path/to/first.ann,path/to/second.ann" --text "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
+brat-standoff-to-json  --ann "path/to/first.ann,path/to/second.ann" --txt "path/to/first.txt,path/to/second.txt" --conf "path/to/annotation.conf"
 ```
 
 ## Commands
